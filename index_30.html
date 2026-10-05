@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candlelight Babies · Survey Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--bg:#f7f6f3;--surface:#fff;--border:#e8e5de;--text:#1a1916;--muted:#7a776e;--faint:#b8b5ad;--radius:12px;--radius-sm:6px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;gap:16px;flex-wrap:wrap;}
+.header-left h1{font-size:16px;font-weight:600;letter-spacing:-.01em;}
+.header-left p{font-size:12px;color:var(--muted);margin-top:2px;}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.fg{display:flex;align-items:center;gap:6px;}
+.fg label{font-size:11px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+select{font-size:12px;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 24px 5px 8px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a776e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;}
+select:focus{outline:none;border-color:#888;}select:disabled{opacity:.4;cursor:default;}
+.upload-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;white-space:nowrap;}
+.upload-btn:hover{background:var(--bg);}
+.upload-btn svg{width:13px;height:13px;flex-shrink:0;}
+input[type=file]{display:none;}
+.resp-badge{font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap;}
+main{max-width:1200px;margin:0 auto;padding:24px 28px 60px;}
+#drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:60px 40px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s;margin-top:20px;}
+#drop-zone:hover,#drop-zone.drag-over{border-color:#888;background:var(--surface);}
+#drop-zone svg{width:32px;height:32px;margin-bottom:12px;color:var(--faint);}
+#drop-zone h2{font-size:15px;font-weight:500;color:var(--text);margin-bottom:6px;}
+#drop-zone p{font-size:13px;color:var(--muted);}
+#drop-zone .browse{color:var(--text);text-decoration:underline;cursor:pointer;}
+#state-msg{display:flex;align-items:center;justify-content:center;padding:60px 20px;color:var(--muted);font-size:14px;gap:10px;}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.sh{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin:32px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+.kpi-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:8px;line-height:1.4;}
+.kpi-value{font-size:30px;font-weight:600;letter-spacing:-.02em;line-height:1;}
+.kpi-sub{font-size:12px;color:var(--faint);margin-top:5px;}
+.nps-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;}
+.ct{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:12px;}
+.nps-bar{display:flex;height:22px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:8px;}
+.nps-seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;}
+.nps-legs{display:flex;justify-content:space-between;font-size:11px;}
+.gg{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}
+.gc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px 12px;display:flex;flex-direction:column;align-items:center;}
+.gl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);align-self:flex-start;margin-bottom:4px;line-height:1.4;min-height:2.8em;display:flex;align-items:flex-end;}
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px 20px;}
+.cc .ct{margin-bottom:14px;}
+.og{display:grid;gap:14px;margin-bottom:14px;}
+.og-2{grid-template-columns:1fr 1fr;}
+.og-3{grid-template-columns:1fr 1fr 1fr;}
+@media(max-width:720px){.og-2,.og-3{grid-template-columns:1fr;}}
+.comc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.comh{padding:12px 16px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border);background:var(--bg);}
+.coml{max-height:300px;overflow-y:auto;}
+.comi{padding:10px 16px;font-size:13px;line-height:1.55;border-bottom:1px solid var(--border);color:var(--text);}
+.comi:last-child{border-bottom:none;}
+.last-updated{font-size:11px;color:var(--faint);text-align:right;margin-top:28px;}
+.sort-th{cursor:pointer;user-select:none;transition:background .15s;}
+.sort-th:hover{background:var(--bg);}
+
+.src-badge{font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap;}
+.note{font-size:11px;color:var(--faint);margin-top:8px;line-height:1.5;}
+.split{font-size:11px;text-align:center;margin-top:2px;line-height:1.5;color:var(--muted);}
+@media(max-width:720px){header{padding:12px 16px;}main{padding:16px 16px 48px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <h1>Candlelight Babies</h1>
+    <p id="dash-sub">Loading data…</p>
+  </div>
+  <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0">
+    <button id="tab-dash" onclick="switchTab('dash')" style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--text);color:var(--surface);border:none;cursor:pointer;">Dashboard</button>
+    <button id="tab-comp" onclick="switchTab('comp')" style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--surface);color:var(--muted);border:none;cursor:pointer;">Compare cities</button>
+    <button id="tab-trend" onclick="switchTab('trend')" style="padding:6px 14px;font-size:12px;font-weight:500;background:var(--surface);color:var(--muted);border:none;cursor:pointer;">Trends</button>
+  </div>
+  <div class="header-right">
+    <div class="fg"><label>Country</label><select id="f-country" disabled><option value="">All</option></select></div>
+    <div class="fg"><label>City</label><select id="f-city" disabled><option value="">All</option></select></div>
+    <div class="fg"><label>Plan ID</label><select id="f-idp" disabled><option value="">All</option></select></div>
+    <div class="fg"><label>Source</label><select id="f-src" disabled><option value="">All</option></select></div>
+    <span class="resp-badge" id="resp-count" style="display:none"></span>
+    <span class="src-badge" id="src-badge" style="display:none"></span>
+    <button class="upload-btn" id="refresh-btn" onclick="loadData()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Refresh data
+    </button>
+  </div>
+</header>
+<main>
+  <div id="state-msg" style="display:none"><div class="spinner"></div><span>Parsing…</span></div>
+  <div id="dashboard" style="display:none"></div>
+  <div id="comparison" style="display:none"></div>
+  <div id="trends" style="display:none"></div>
+</main>
+<script>
+/* ── data source ─────────────────────────────────────────────
+   Live mode: in the Google Sheet, File > Share > Publish to web,
+   pick the "PES_CDL Babies EN…" tab + "Comma-separated values (.csv)",
+   and paste that link below. Leave empty to use the embedded snapshot. */
+const SHEET_URL = "";
+const SNAPSHOT_DATE = "5 Oct 2026";
+const SNAPSHOT = [["Would you *recommend* Candlelight Babies to your friends?","How would you rate the *venue*?","How would you rate the *onsite staff*?","How easy was it to *move around the venue*?","How would you rate your *comfort during the experience*?","How would you rate the *setlist*?","How would you rate the *candle setup*?","What did you think about the *interaction in the experience*?","How did you feel about the *volume of the music*?","How did you feel about the *amount of people at the experience*?","How did you feel about the *duration of the experience*?","How would you rate the *value for money* of your ticket?","How did the experience *compare to your expectations*?","How likely are you to *return to this experience*?","Was there any *information* you wish you had received before attending?","Which type of *audience* would you prefer for future Candlelight Babies experiences?","Almost there!\nJust 3 more questions and we're done.\n\nWhat *aspect(s) of the experience* did you enjoy the most?","And what do you think needs the *most improvement*?","That's all!\n*Anything else* you would like to share with us?","c","ct","idu","idp","p","idt","name","Submitted At","Token"],["6","","4","","3","","4","3","","5","","2","2","2","","*Babies only*","","","","74","14","44413318","648658","Candlelight Babies: Classical Sounds to Stimulate Little Minds","137727417","","2026-08-31 04:22:17","9lx3yq37nuz9ry4of8oem7k9lx3yq37d"],["10","3","4","5","3","4","3","5","3","3","3","3","3","3","Info on the setup and how many artists were playing","*Babies only*","Music","More visuals for babies","","74","14","62766482","648658","Candlelight Babies: Classical Sounds to Stimulate Little Minds","142122692","","2026-08-30 09:39:37","remgp7jd08v3rojk6mggnremgp75ilce"],["10","","5","5","","5","","3","3","3","4","","5","","","*Babies and toddlers*","","","","74","14","105015253","648658","Candlelight Babies: Classical Sounds to Stimulate Little Minds","142478907","","2026-08-30 03:07:45","99ez8n9ll0yh1gx0991v3p00h8bf11e5"],["10","4","5","5","1","1","1","3","3","3","3","1","3","3","bsbq","*Babies only*","ntzb","vfe","<3","xxxxx","xxxxx","xxxxx","xxxxx","xxxxx","xxxxx","","2026-08-06 16:01:43","n85j630sp0qgx6j5n85j51ogjmovv30r"],["10","5","5","5","5","5","5","3","3","4","3","3","3","5","Nein","*Babies and toddlers*","Ambiente, Schuhe ausziehen, freundlichkeit","Lautstärke vom mikro war etwas laut","Danke dass ihr an die Babys denkt und miteinbezieht","83","216","xxxxx","713718","Candlelight Babies","xxxxx","Onsite","2026-09-12 11:30:25","yws80wfneh04huksq2syws80wfd7e8id"],["8","4","4","4","3","4","4","3","4","5","2","2","2","3","die Anzahl (zu viele) erwachsene Teilnehmer","*Babies only*","Musik","zu viele Leute","","83","216","104784123","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142446748","","2026-09-13 10:39:52","4kbhx8nhnqvp35o2jxzz1y74kbhx8rhz"],["3","4","5","5","1","5","5","5","1","5","5","2","1","1","Ja, wie viele Teilnehmer es geben wird. Falls ich gewusst hätte dass es 100+ sind, hätte ich nicht teilgenohmen.","*Babies only*","Es gab viel Vorbereitung dahinter, gute Musik.","Nicht so viele Leute. Zu viel Bewegung, zu viel Ablenkung.","Wieso habt ihr 2 Umfragen geschickt?","83","216","105404256","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","143311236","","2026-09-13 10:41:17","ccms6zgg7cvpxccms6zec6m3z6b2ps3h"],["5","5","4","4","3","3","3","4","3","5","3","3","2","3","","*Babies and toddlers*","","Die musik Auswahl","Kissen zum sitzen wären besser, und Getränke Service mit z.b Kaffee mit Deckel und Wasser.","83","216","104829990","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142503806","","2026-09-13 11:17:01","gu9g1mew5yitmew8qgu9g1jqu3qi21kf"],["6","4","","4","","2","5","5","3","3","3","1","2","3","Es war schön, aber für den Preis hätte ich ein Orchester erwartet","*Babies and toddlers*","","Mehr verschiedene Instrumente","","83","216","105738815","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","144054733","","2026-09-13 12:15:01","wgmnfq5vw3huusuru3czwgmnfqr4h0k0"],["10","5","5","4","5","4","5","3","3","3","4","4","5","5","","*Babies and toddlers*","Das gemeinsame Erlebnis als junge Familie","Keine Rasselspielsachen","Es war super! Hoffentlich gibt es bald mehr solche Veranstaltungen.","83","216","104693599","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142450101","","2026-09-13 15:09:15","kxws2nuh6ncryd4etq9xdy1kxws2nbmq"],["10","5","5","5","5","5","5","3","3","3","3","5","5","5","","*Babies and toddlers*","the environment","","","83","216","104971089","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142376666","","2026-09-13 15:56:57","5vkfjueiw7jgvhg1f5vkfj3qanqs3inl"],["10","4","4","5","3","5","5","5","3","4","3","3","3","3","Nein","*Babies and toddlers*","Musik, Stimmung","Grosse Kissen für Bequemlichkeit und 2 Meter vor Bühne nur Kinder","Vielleicht eher stimmungsvollere Musik. Es ist kein Einschlafkonzert","83","216","104673119","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142381533","","2026-09-13 18:06:05","sagavoatodjphuoh2anfgvsagava0not"],["9","3","5","5","5","","4","4","2","5","1","4","2","4","Nein","*Babies and toddlers*","","","Es waren irgendwann zu viele Kinder am weinen und auch zu viele Eltern laut. Damit man es genießen kann, würde ich die Eltern, wo die Babys garnicht aufhören zu weinen, raus bitten zum beruhigen. Weil dies für keine gut ist, weder für das weinende noch da konzentrierte Baby ist. Durch die Unruhe wirkten die Lieder auch zu schnell. Irgendwann hatte ich das Gefühl als wurden die Lieder zu schnell fertig. Auch kam es mir vor, als waren es keine 60 min wie angegeben.","83","216","105592317","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","143733937","","2026-09-13 20:32:37","mwb8ntty9u2ujbih6s40mwb8n3ly05oy"],["5","4","3","5","4","4","4","2","1","4","","2","3","1","","*Babies and toddlers*","The musicians were experienced professionals","Instructions to the audience and volume of the music (oftentimes we couldn’t hear almost anything cause the audience was too loud and the musicians couldn’t play louder than they did)","","83","216","105383912","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","143276170","","2026-09-13 22:24:43","3x27ngixa0w3xodpvml03x27ngi2inwq"],["0","1","2","1","1","3","3","5","1","5","2","1","1","1","It was the worst concert experience I had. Because of babies a lot of things had to be considered, but it was very poorly organized. The hall was completely full, no space for babies to move. The sound of music was not heard at all. And for that value of many just two young inexperienced musician were playing instruments, no acoustics, no involving kids. It was purely just to earn as much as possible money.","*No preference*","","I already added my comments. I don’t think there is an intention to improve something there, the purpose to earn more money. It shouldn’t be too difficult to understand how setup should be for babies and families. How to mask the kids noise, how to make it more interactive for them that they listen. And of course musicians should had experience to work with babies. By the way after 2 y they are not anymore baby, they are toddler. So maybe audience needed to be separated correctly by age.","","83","216","104971057","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142377674","","2026-09-14 06:22:16","y6h1vongabz9xfdiu73my6h1jl0rprrw"],["0","2","5","2","1","5","5","3","3","","3","2","1","1","","*No preference*","","Mehr abgetrennt Nischen.","","83","216","105669237","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","143899737","","2026-09-14 09:49:02","mk8vh7snkihjemk8vh7ky5wlwocozgp4"],["10","5","5","5","5","5","5","3","3","3","3","4","5","5","Treppe und nur 1 Lift (wenn alle mit Kinderwagen kommen)","*Babies and toddlers*","","","danke, es war toll!","83","216","54634006","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142457003","","2026-09-14 09:49:23","sikfsb7grcsbpox7d6sikfsb0dhjcx16"],["8","","5","","5","5","5","4","","4","2","4","3","2","","*Babies, toddlers and older children*","The setting and the fact that the musicians did an introduction and presentation","Perhaps an explanation pdf to the parents before the concert (no clapping, but sign-language clapping, children/babies can move as wanted etc)","","405","131","102716556","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","137562163","","2026-09-14 10:38:35","bqd9plqs2rjn1wswrl57cg84qbqd9plq"],["7","4","4","5","4","3","3","4","","3","2","3","2","2","","*Babies only*","Music","arrangement, too light","Should be definitely cheaper or at least coffee free (5€ for coffee from capsules?)","405","131","104522133","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","141404645","","2026-09-14 10:40:20","7gb0bnh71kovo6v4rxwr7r267gb0bn83"],["9","4","4","4","4","4","4","3","3","3","3","4","4","4","","*No preference*","","Mettre à disposition un micro ondes pour chauffer le plat de bébé","","405","131","78613067","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","142131285","","2026-09-14 11:19:44","pl4h50gvvr4dztzy58pl4h50ixdej1h4"],["5","5","","5","3","2","5","3","3","3","3","1","","1","Compte tenu le prix , plus de confort pour les parents dans l’assise et un petit apéro ne serait pqs de trop","*No preference*","","Le confort pour les parents","","405","131","106361514","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","145620979","","2026-09-14 11:24:33","ew9ckb05kkvfr5q0f3ew9ck3i2fbv9bz"],["10","4","4","4","4","4","4","4","","3","3","4","4","5","","*Babies and toddlers*","For juds","Two entrances probably","","405","131","95539480","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","144598530","","2026-09-14 11:36:31","nqo4c8igrhkfih294nqo473uyjxnlr1z"],["4","4","3","3","3","3","4","2","3","4","3","2","2","1","Dass man den Kinderwagen nicht reinnehmen kann","*Babies only*","Kerzen / Ambiente","Bequemere / Kuschelige Sitzmöglichkeit","Die Lautstärke der Durchsagen war zu laut","83","216","105931634","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","144463577","","2026-09-14 15:20:42","ygoeecbwx8n4qb9ed2ygoeechjcmdy5h"],["10","5","5","5","5","5","5","5","3","3","3","5","","4","","*No preference*","","Nothing. It was a great experience","","6","236","21574440","642255","Candlelight Babies: Classical Sounds to Stimulate Little Minds","138105367","","2026-09-14 15:41:59","11ytlbausjkihhkjvt11511ytlbaaej9"],["8","","5","","4","","4","","4","3","","3","","3","","*Babies and toddlers*","",".","","405","131","69013445","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","141529870","","2026-09-14 17:56:34","ph6ghbbfo2lpllejph6ghb5t9w57vfr2"],["8","","4","5","5","5","5","2","","3","","2","","4","that we could have took off our shoes","*Babies only*","","if you tell to come at 10.30, open gates at 10.30. waiting in queue with children maybbe exhausting","","405","131","105350758","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","143205230","","2026-09-15 05:31:24","ajfk8vi2kyd0grv5bajfk8vil1ays5r7"],["3","4","4","4","4","5","","3","3","5","3","2","1","1","","*No preference*","","Trop de monde , pas assez tamisé , les bougies auraient suffit pour éclairer la pièce , trop de circulation des enfants plus grands qui faisaient ce qu’ils voulaient dans la pièce.","","405","131","56491977","527233","Candlelight Babies: des airs classiques pour stimuler l'esprit des bébés","145814584","","2026-09-15 05:51:42","8fft3i9vf6ue6viyvz18fft3i9au3gsu"],["10","5","5","5","5","5","5","5","","5","5","5","5","5","","*No preference*","","","","6","236","xxxxx","642255","Candlelight Babies","xxxxx","Onsite","2026-09-15 13:18:02","xxhscjhvra8qeblxxxh68hh4f2cvbxpv"],["10","5","5","5","5","5","5","3","2","","1","4","4","3","","*Babies and toddlers*","","","","6","236","105793652","642255","Candlelight Babies: Classical Sounds to Stimulate Little Minds","144176433","","2026-09-15 13:38:29","fa3dbztnwvptmkzeo50a9qqfa3dbztge"],["9","","3","2","2","4","4","5","3","5","1","1","2","3","Nich klappen wegen kleine babies","*Babies and toddlers*","","Regeln uns mehr platz","","83","216","104759146","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142385954","","2026-09-15 15:05:23","tp2v8ho5nv1oxnduk4tp2v8hsipqjon6"],["10","5","5","5","5","5","5","4","5","3","3","4","3","5","Nothing","*Babies only*","A first experience with my baby","Nothing","No","57","84","xxxxx","675437","Candlelight Babies","xxxxx","Onsite","2026-09-19 11:05:46","yfajtk55fp2i6iy61gyfajtm0w971ttj"],["10","5","5","","5","","5","","3","4","3","3","4","5","Toilettensituation für Erwachsene","*Babies and toddlers*","Ambiente, Stimmung","Fotografieren wirklich nur am Ende der Vorstellung. Das muss besser kommuniziert werden :-) vielleicht direkt am Anfang nochmal sagen","Wenn ihr Lust auf eine Zusammenarbeit habt, lasst es mich wissen ;-) @endoloewin","57","84","xxxxx","675437","Candlelight Babies","xxxxx","Onsite","2026-09-19 11:22:42","koceymjdzhqqk6n0jxqudb0koceymjtn"],["10","5","5","5","5","5","5","1","3","4","4","1","5","4","","*Babies and toddlers*","Musik","Nix","","57","84","xxxxx","675437","Candlelight Babies","xxxxx","Onsite","2026-09-19 15:20:19","wnpjpaf3k0wj3dzvh7dwnpjpa2g55hoe"],["10","","5","5","5","5","5","5","5","3","3","5","5","5","","*Babies and toddlers*","","","","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 09:20:15","hw0d0kauku0vzkhw0d08ibn77ill9hs8"],["10","5","5","","5","5","5","5","5","5","5","5","5","3","","*Babies and toddlers*","","","","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 09:20:27","ruqibq1wlx6h645apruqdowi05zk3z2b"],["10","5","5","5","5","5","5","3","5","3","3","5","","5","Todo bien","*Babies and toddlers*","","","","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 09:24:14","f7xf7v38avnc12u5wiy8f7xfvqdgevky"],["10","","5","5","","5","5","","5","","5","","5","","","","","","","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 09:24:17","q1cnwl58uf89ergpc9i6k3iq1cnwlx6c"],["10","5","5","5","5","5","5","3","3","3","4","5","4","5","Nada","*Babies and toddlers*","La puesta en escena y las facilidades","Nada","Nada","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 09:28:35","garntu4xk4t7gafpgarntm2h4inx0ogg"],["10","5","5","5","5","5","5","3","3","3","3","4","3","5","No se me ocurre nada","*No preference*","Compartir una experiencia musical con mi bebé","No se oían demasiado bien las explicaciones","Nada más","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 09:29:17","ded4hquiwkdki035gxhpx4lded4hquid"],["6","5","5","5","4","4","4","4","3","5","3","2","2","2","","*Babies only*","","","","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 09:29:21","cyz7w3pcior3mkrecyz7s9f41gpvsdgx"],["10","5","5","5","5","5","5","3","3","3","4","5","5","5","Todo genial","*Babies and toddlers*","Los músicos hicieron un gran trabajo, las velas fueron un hit con mi hijo y el volumen de la música también fue ideal","Podría durar 30 minutos porque al final la atención de los peques ya estaba un poco dispersa","Nos gustó mucho!","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 10:02:50","eqeuelovvkuurjhleqeu1cabogz4wzhu"],["6","4","5","4","4","3","3","4","3","2","2","2","2","3","","*Babies and toddlers*","","","","57","84","105245579","675437","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142984285","","2026-09-20 10:57:44","tkqd58fismjdqvnfum5etkqd587xpjll"],["9","5","5","5","5","5","5","5","5","3","5","4","4","5","","*No preference*","","","","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 11:06:52","k7jbreid0oz8pj27k7jbrmox98h1ltjq"],["10","5","5","5","5","5","5","3","3","3","3","5","3","3","No","*Babies and toddlers*","","El micrófono no sé entendia","","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 11:07:27","s872vvdl0x1ylq6ykyziva8s872vvdl5"],["10","5","5","5","5","5","5","3","3","3","3","5","5","5","","*No preference*","La flexibilidad y libertad que hay para los niños, que hace que hasta los más pequeños disfruten la experiencia 💝","","Fue una experiencia maravillosa para la niña, que con apenas 2 años disfrutó la selección de temas (especialmente los infantiles), y bailó con gusto","5","210","xxxxx","467701","Candlelight Babies","xxxxx","Onsite","2026-09-20 11:12:02","1wy2yflrojp7cvjifza41wy2yflro7zf"],["10","","5","5","5","5","5","3","3","3","3","4","4","5","Wickelbereich","*Babies and toddlers*","","","","57","84","90809754","675437","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142789655","","2026-09-20 12:07:15","5cizbfx0zlw5w5cl5cizbfdvu46gp2gq"],["10","5","5","1","5","5","5","4","3","5","3","3","4","4","Die Information, dass es keine Rampe für denn Kinderwagen gibt.","*Babies and toddlers*","","","","57","84","71722072","675437","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","145229144","","2026-09-21 07:04:56","88wvq3yun5rk0kubsmrx688wvq34y6zo"],["5","5","4","5","5","4","4","3","3","4","5","2","3","2","","*No preference*","The setup","Shorter performance and more interaction with audience","","5","210","26619015","467701","Candlelight Babies: Sonidos Clásicos para Estimular Pequeñas Mentes","147221924","","2026-09-21 10:39:25","wov63kf8wzkqq7s44coxwovcw34uv3fu"],["2","4","4","3","3","3","2","5","1","5","4","1","1","1","El ruido de fondo (de los adultos, no de los bebés) era insoportable,","*Babies and toddlers*","","Bajada de precio","","5","210","59185318","467701","Candlelight Babies: Sonidos Clásicos para Estimular Pequeñas Mentes","142499303","","2026-09-21 10:39:52","mif9itsmrzqwdv4fmif9i6jnhuy06atw"],["8","5","5","5","3","5","","5","3","5","3","","2","2","Que habían tantos niños mayores","*Babies only*","La música y el espacio","Menos niños mayores , si solo es bebés porque no se disfruta igual","","5","210","54262842","467701","Candlelight Babies: Sonidos Clásicos para Estimular Pequeñas Mentes","143757613","","2026-09-21 11:16:38","n89nya0of1jl6207ndeutdn89nya0oq7"],["10","5","5","5","4","4","5","4","3","4","3","4","5","5","","*Babies and toddlers*","ambiente und die Musiker schönes Bühnenbild","","","83","216","45490038","713718","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142389225","","2026-09-23 19:48:55","j6s2qr3y309v6dtrjvke1j6s2n6hejda"],["10","5","5","5","5","5","5","3","3","3","3","5","3","3","","*Babies and toddlers*","You think about every necessity parents could have with their babies","","","57","84","58616821","675437","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142411003","","2026-09-23 20:39:09","f5eujvbvdxal8y3jtvrf5eujvb97kvgy"],["10","5","5","5","5","5","5","5","5","5","5","5","5","5","","*Babies and toddlers*","La música y la posibilidad de movimiento en los bebés.","","","5","210","75896071","467701","Candlelight Babies: Sonidos Clásicos para Estimular Pequeñas Mentes","145803801","","2026-09-24 06:07:22","7hr7ilbi8ibc3mwsb6v9qkx7hr7ilbn6"],["10","5","5","5","5","4","5","3","2","4","4","5","3","5","","","","","","28","32","xxxxx","712109","Candlelight Babies","xxxxx","Onsite","2026-09-26 14:53:25","jn8xnct6jv8twgy0ntvjn8xnrr3t62ws"],["10","5","5","5","5","5","5","3","3","","3","5","4","3","","*Babies, toddlers and older children*","","","","21","236","xxxxx","707992","Candlelight Babies","xxxxx","Onsite","2026-09-26 16:49:22","ou6knkd734kkf6k5pqou6ko6p2no2x68"],["7","","5","5","4","4","5","3","4","4","5","4","3","4","Nope","*No preference*","","The weird Christmas music at the beginning felt opt of place","","21","236","xxxxx","707992","Candlelight Babies","xxxxx","Onsite","2026-09-26 16:49:38","me3480pqvqrwkszul8pme3480pvccylr"],["10","5","5","5","5","5","5","3","5","3","3","5","5","5","No.","*No preference*","That the employees made sure every baby had a candle.","Nothing. It was absolutely awesome!!!","It was so good. We can’t wait to come again. Even our 4 month old loved what she heard when she woke up.","21","236","xxxxx","707992","Candlelight Babies","xxxxx","Onsite","2026-09-26 18:26:10","wwc6all44rnd1wwcqrw7p3dykocv1afd"],["10","5","5","5","5","5","5","3","2","5","3","5","4","5","","*Babies and toddlers*","The baby specific theme","Volume a little louder","","21","236","xxxxx","707992","Candlelight Babies","xxxxx","Onsite","2026-09-26 18:44:46","eb9y0owpmr1ggrcwdtceb9y0ow85y10a"],["6","4","5","5","3","3","4","4","4","3","4","5","2","3","","*Babies only*","A altura do som estava muito agradável!","Em um determinado momento, diminuíram o ar e ficou super frio! Poderiam ter tocado mais músicas conhecidas pelos pequenos em versão clássica.","","28","32","xxxxx","712109","Candlelight Babies","xxxxx","Onsite","2026-09-26 20:45:29","ohot02v7l019cjfdcwohotx0udc75yqx"],["5","4","4","4","3","2","2","5","3","4","3","2","2","1","As músicas deveriam ser tocadas de forma mais animada","*No preference*","Não gostei","Músicas mais animadas, para as crianças interagirem e dancarem","Músicas mais animadas, foi muito parado","28","32","104697638","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142421064","","2026-09-27 15:38:21","c91kqj2qo6xl4wl9kc91kuyhq2o2q1bd"],["7","5","5","5","4","4","4","4","3","4","2","2","2","","","*Babies and toddlers*","As músicas, o local","A disposicao no tatame é legal.. mas deixou um aspecto bagunçado, claro são crianças e a experiência delas livres é legal.. mas não chegou nas minhas expectativas de imersão","","28","32","31751086","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142421702","","2026-09-27 15:40:51","xgbeaq3h8wzg3t99eexgben0pcxybref"],["10","5","5","5","3","5","5","2","3","5","5","3","2","3","","*Babies and toddlers*","Musica","Conforto para os acompanhantes mais velhos","","28","32","50294676","712109","Candlelight%20Babies:%20Sons%20clássicos%20para%20mentes%20curiosas","148147755","","2026-09-27 15:41:11","axk8r5akp79j36ud1swaxk8r5lowmle6"],["10","","5","","5","5","5","5","5","5","5","","5","5","","*Babies and toddlers*","Experiência da minha bebê com outros bebês.","","","28","32","xxxxx","712109","Candlelight Babies","xxxxx","Onsite","2026-09-27 16:16:52","rcwlk4si8iogd2ftu3d04rcwlk4scft8"],["10","5","5","5","5","5","5","3","3","3","3","5","5","5","","*Babies and toddlers*","Tudo","Está perfeito","Parabéns!!!!!","28","32","xxxxx","712109","Candlelight Babies","xxxxx","Onsite","2026-09-27 16:18:07","5i2zbvlewwfmtfxp8p6u405i2zbvlewk"],["0","1","5","5","1","1","1","5","3","3","3","1","1","1","Que eram apenas dois músicos e não eram músicas de crianças. Não teria ido.","*Babies and toddlers*","As velas que podiam brincar \nAchei péssimo não poder encostar nas outras e não estarem nem presas no palco. Um saco ter q ficar tirando as crianças de perto. Na altura dos olhos delas e não pode encostar…","Músicas, orquestra, conforto","","28","32","46402531","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142420335","","2026-09-27 16:40:08","su61yl5kaao8pm36qrasu61yl5g91mlo"],["10","5","","5","5","5","5","3","3","4","3","4","4","5","","*Babies and toddlers*","","","","28","32","100940751","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142421618","","2026-09-27 16:42:48","iu6fg6ld4wcf5nj0z73giu6fg66wt1u9"],["0","1","5","2","2","5","2","1","4","4","2","1","1","1","","*Babies only*","","","","21","236","104708000","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","142436872","","2026-09-27 17:40:58","9icwnobky2gnt83n9icwnqk5gp4e9rfn"],["3","2","2","3","3","4","3","3","3","3","3","2","1","1","","*Babies, toddlers and older children*","","The staff, especially the ones seating people. They were very demanding and impolite. Everybody had to sit in specific squares. This doesn't work with babies and toddlers. Let it happen organically. In the ende the back was empty and the front was crowded. There was no need for this sitting rudeness at all.","","21","236","73226228","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","142683294","","2026-09-27 18:36:12","phvwbvqxvbrpgj79kifypphvwbjk4ye0"],["9","5","5","4","4","","5","","3","5","3","4","3","","","","","","","28","32","104990059","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142425505","","2026-09-27 18:49:13","mbh52of6pte9aaqae0mbh52ogd54tzas"],["0","1","4","3","2","2","2","1","2","5","1","1","","1","that it was a waste of money and it’s not cheap","*No preference*","","The overall experience was boring.  what you see on the ads is not what takes place in person.","","21","236","104717974","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","143224623","","2026-09-27 19:59:15","sqsqlbt2q7jggujqsqsqlfm6fwy4axsy"],["5","4","5","3","3","5","5","3","3","5","3","2","2","2","","*Babies and toddlers*","The music, low light, candles","It’s overpriced; they had us sit too close to one another; it was not safe to move around without tripping over other families","Stroller parking and Changing stations were great!","21","236","31272035","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","148180469","","2026-09-27 20:22:11","brv6zbrvi9yjkzi2lkbrv6zoei3wn3xt"],["10","5","5","5","5","5","5","3","3","3","3","3","3","5","","*Babies and toddlers*","","","","21","236","57705810","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","144517649","","2026-09-27 21:15:11","icydifcz8w0hbkwticyd9khrycrfuofx"],["5","","5","4","3","5","4","5","3","5","3","2","","1","","*Babies and toddlers*","The talent of the musicians.","Too high of a price point for the quarter of the experience.","","21","236","47539403","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","143436716","","2026-09-27 21:21:59","6y8zw0bkhrbislox56y8cu03rgm4kxzi"],["4","4","5","3","3","4","4","5","4","5","3","3","1","1","A foto divulgada mostrava uma orquestra de camara, dando a entender que seriam mais musicos. Em nenhum momento informaram que seria apenas um duo. \nOutro ponto, no palco foi anunciado que as velas do palco nao poderiam ser tocadas e isso fez com que todos os pais ficassem segurando os seus bebes, ou seja, o evento deixou de ser um evento para bebes e virou um evento tenso, pouco dinamico, apenas para pais ouvirem musicas e bebes nao poderem brincar. \nDecepcionante. Nao volto e nem indico.","Esse evento nao faz sentido","Da musica classica","Vcs criam um palco repleto de velas, fazem esse evento para bebes e ai dizem que os bebes nao podem tocar nas velas do palco. \nQue tiro no pé. Foi uma decepção. Nunca mais quero saber se candle lights.","Facam uma pesquisa com pais e maes antes de criar um evento para bebes.","28","32","104840683","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142422936","","2026-09-27 23:20:18","k76q7zvfcrkakzs6e6f7mylm2fisdysz"],["10","5","5","5","5","5","5","3","3","3","3","5","5","5","No","*Babies and toddlers*","The little one being able to play with the candles was so cute. The diaper changing room was incredible as well as the stroller parking being convenient.","I can’t think of any. I enjoyed every part.","Maybe a few more baskets of candles around for easier access to candles","21","236","50750224","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","144652528","","2026-09-27 23:40:33","y51damc7gu518kpyry51dafxz8c6r6d8"],["7","3","3","4","4","4","3","3","3","4","3","2","2","3","I was expecting a string quartet like pictured in promo, however there were only 2 musicians so felt like it didn't deliver what was advertised","*Babies, toddlers and older children*","Interaction and playlist","nicer venue and more musicians","","21","236","104886348","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","145916313","","2026-09-28 00:31:52","g5zq45ncorbmws0zv7g5zq4eh7r8t0g7"],["2","","5","5","2","5","5","4","2","5","3","2","2","","","*Babies only*","Lugar, estrutura, musicas","Foi um caos (e não pelas crianças). Sugiro controle como se fosse um espetáculo mesmo.","","28","32","30906416","712109","Candlelight Babies: Sons clássicos para mentes curiosas","148026789","","2026-09-28 01:00:04","xa7f8tnryn6nxst16sg78avk639mnst1"],["7","5","5","4","4","5","4","5","1","5","3","3","2","2","","Pais mais conscientes e que fiquem quietos durante a apresentação","Das músicas escolhidas","Conscientizar os pais sobre como se comportar no ambiente","","28","32","39706970","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142422314","","2026-09-28 12:06:54","fm1xbps6wnad0dtzfm1x51f06mwubvxd"],["10","5","5","5","5","5","4","3","3","3","3","4","3","2","","*Babies only*","gostei do repertório e da higiene do local para bebês é um ponto muito importante.","entendi que não poderia ser gravado, mas em alguns momentos senti falta de tirar foto do meu filho nessa experiência, pudemos filmar e tirar foto no final, mas percebi que muitas crianças estavam agitadas ou dormindo no final do evento.","gostei muito da equipe e já estou seguindo no instagram.","28","32","102650994","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142425718","","2026-09-28 12:08:42","968jdupwog7rutzeutl968j74grmsnci"],["8","5","5","4","4","4","4","2","3","3","3","2","3","3","","Babys und Kleinkinder getrennt voneinander","Die Blicke meines Sohnes und die Musik","Der Preis für Erwachsene, da wir eher für die Kinder da sind und nicht immer entspannen können","","57","84","81150941","675437","Candlelight Babies: Klassische Klänge zur Anregung kleiner Köpfe","142374434","","2026-09-28 12:35:30","826ajr4uahlgp826ebmsx75ps86iluxd"],["8","5","5","4","4","5","4","2","3","5","3","4","4","3","","*Babies and toddlers*","","","","21","236","105836003","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","144268932","","2026-09-28 13:36:20","mmshgiat4lamey1x6t88mmsh2nn7ww72"],["8","5","5","5","5","5","5","2","2","3","2","4","3","3","","*Babies only*","espaço tranquilo e libre para as crianças","o volume e a interação com as musicas","","28","32","104837220","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142420889","","2026-09-28 14:19:04","o0jjn4rq7p896jdhg55mao0jj3sm46wh"],["5","3","4","4","2","4","4","3","3","4","3","2","1","1","Muito barulhento, as pessoas não paravam de falar, o espaço era fechado, então o barulho ficou ainda mais alto. Não era barulho dos bebês, era barulho de adultos conversando. Achei desagradável.","*Babies only*","As velas, as musicas","Controlar a quantidade de adultos presentes x criança, reforçar recomendação de silêncio para não atrapalhar os demais. Uma atração tão curta, custa ficar quieto por 40 min.","","28","32","104702920","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142826377","","2026-09-28 15:44:18","s2bnxkkm9b816cw90ikzos2bnxkkdrrr"],["0","1","1","1","","2","2","5","1","5","2","1","1","1","I don’t think that an info would change something. But the staff is not prepared enough, people chatter too much, there’s no regulation at all. I didn’t listen to the music, I heard other adults talking. Awful experience. Never coming back, and will not recommend for anyone.","*Babies only*","Nothing.","All! Toddlers are not the public, very different. Too many people. Too much chitchat (adult). Too hot. Staff allowing whatever the public wanted.","If possible I want the money back due to the awful experience.","28","32","69539440","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142843477","","2026-09-28 15:56:27","3j30s7jrd0zsxzqgrb3j30s7jsgtbez6"],["10","5","5","5","5","5","5","4","3","3","4","5","4","4","a localização do fraldário","*No preference*","o Tatame que possibilitou que as bebes pudessem ficar no chão de forma segura, a disponibilização de velas para que elas pudessem interagir","Antes do inicio do espetaculo, poderiam informar onde se localizam os banheiros e o fraldário","Na minha percepção, se o espetaculo tivesse 10 minutos a menos seria melhor, o ultimo bloco de musicas as crianças e bebes já estavam muito agitados","28","32","90605020","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142812033","","2026-09-28 15:56:48","15j8aqr1hblwquz93l15j8avyh31lku1"],["10","5","5","5","5","5","5","4","3","4","2","5","3","5","","*Babies only*","","Educação dos pais com relação a filmagens","","28","32","64543306","712109","Candlelight Babies: Sons clássicos para mentes curiosas","143721150","","2026-09-28 15:59:06","1hoebl6emb10uz4qz1hoebl6efpueba5"],["10","5","5","5","3","5","5","3","3","3","3","2","4","3","Poderia descrever melhor a experiência. Eu achei ótimo o tapete para crianças, mas não fui com roupa própria para isso","*Babies and toddlers*","","Mais informações","A ideia foi excelente, amei tudo e meu bebê também","28","32","48716256","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142840541","","2026-09-28 15:59:26","eis2r94247n55xfasfeeis2r92gflu9n"],["6","","4","5","5","5","4","5","1","3","1","3","2","1","Que o volume do som é muito baixo","Crianças grandes","As musicistas era muito boas e simpaticas","O som é muito baixo e com barulho das crianças fica difícil realmente escutar","","28","32","105111305","712109","Candlelight Babies: Sons clássicos para mentes curiosas","144085415","","2026-09-28 16:24:53","dvu0fbpetczdbodvu0my10tbfic2jo62"],["8","4","3","3","2","2","4","5","3","5","1","2","1","3","Havia excesso de pessoas para a estrutura do local. A organização não conseguiu conter as conversas (altas) dos adultos, o que na minha opinião fez com que a experiência não correspondesse ao objetivo do evento.","*Babies only*","","As orientações e intervenção aos pais que conversam alto, desrespeitando o momento dos demais","Reduzir o número de pessoas por evento seria bem adequado.","28","32","104685966","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142811639","","2026-09-28 22:39:47","o26h290ks6kwrrtyk5go26h29027k5um"],["10","5","5","5","4","5","5","3","2","4","3","4","3","5","No","*Babies only*","The song selection","More seating so families do not have to sit on the floor","No – thank you!","21","236","106283423","707992","Candlelight Babies: Classical Sounds to Stimulate Little Minds","144963963","","2026-09-28 23:54:48","vggbh27f6zv6ligv9aktxvggbh2jpdzq"],["8","","5","","5","5","5","4","3","3","1","5","2","4","","*Babies and toddlers*","As crianças terem ganhado velas para interagir e o tatame","O local do espetáculo, valet não deu conta do volume de carros. Também sugiro aumentar o concerto e ter um breve intervalo","Fica o elogio pela iniciativa, só achei muito curta a duração, um intervalo poderia fazer ser um pouco mais longa e ainda melhor a experiência. Façam mais edições, os bebês precisam desses espaços!","28","32","54212364","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142811001","","2026-09-29 00:51:05","y8l5r0dr8zc22wpzoy8l5r0n8yazmz2n"],["4","3","3","5","2","3","4","5","1","3","3","2","1","1","Não","*Babies and toddlers*","Das velas","Estrutura do lugar ruim, serviço de estacionamento ruim, estava muito quente na sala de apresentação, o som estava baixo não chamou a atenção da minha filha, parecia que estava num local com várias pessoas com um som ambiente ligado.","","28","32","96981292","712109","Candlelight Babies: Sons clássicos para mentes curiosas","142833072","","2026-09-29 14:24:59","xgnf1ufo2yphbpaxgnf1k32e9dnuhr19"],["10","5","5","5","5","5","5","1","3","3","3","5","5","5","Everything was greT","*No preference*","Music","Nothing","","6","236","xxxxx","642255","Candlelight Babies","xxxxx","Onsite","2026-10-03 16:47:00","flre0wfzltsh5m84eeeowflre0wfrr5g"],["10","5","5","5","5","5","5","3","3","3","2","5","5","5","Nope","*Babies only*","The performance was wonderful but 10/10 for the changing tables set up!! That was amazing","Nothing comes to mind","It was lovely! Just wish there were more concerts to attend :)","6","236","107720354","642255","Candlelight Babies: Classical Sounds to Stimulate Little Minds","147884478","","2026-10-04 15:35:29","ac16zqsxcolr23cxcp7jac16zh2wuyhp"],["10","5","5","5","5","5","5","3","3","3","3","5","4","5","","*Babies only*","It was perfect","Space\nPer person","","6","236","28708142","642255","Candlelight Babies: Classical Sounds to Stimulate Little Minds","146999204","","2026-10-04 19:22:59","msh4wsq1zp0smgla6zpmsh4wsq8g9740"],["10","5","5","5","5","5","5","3","3","3","3","5","4","5","None. I think the experience was worth it, very enjoyable and better than we imagined it.","*Babies, toddlers and older children*","How clean and organized things were, how the babies and toddlers were free to move around during the performance","Maybe having a cubby area to drop off shoes (they asked us to take them off) or to place our bags, similar to what they have in many toddler indoor playrooms. It could also be nice to let people know beforehand to bring grip socks, etc. Additionally, I would also love if this concert series came to Westchester, NY where we live! One tip I can share is... see if you can partner with or share the information with local libraries. Many families take their babies and toddlers to library classes and I know they would love to take their littles to an experience like this one.","It was wonderful and a beautiful experience for us and our kiddos. One other small tip would be to think about the processing fee for the tickets. They were different for every ticket which was interesting. It didn't feel simple and straightforward to do math to figure out which ticket combo made more sense. I think this could deter future costumers. I went through the process because I had been to a Candlelight experience with my husband before so I was familiar with the concert series. But I can see how a new costumer may find the different prices confusing or even \"suspicious\" like maybe the concert is a scam (especially if like me, they followed a link from social media). Maybe having an incentive for purchasing the ticket bundles would be helpful?","6","236","56262078","642255","Candlelight Babies: Classical Sounds to Stimulate Little Minds","144384452","","2026-10-04 19:27:02","4n6gptyo2uwm74n6s2czaa823b8nrksx"],["10","5","5","5","5","5","5","3","3","4","3","5","5","5","","*Babies and toddlers*","","","","6","236","107111363","642255","Candlelight Babies: Classical Sounds to Stimulate Little Minds","146649840","","2026-10-04 22:01:20","vsyj2jdkupiolguvsyj2jxv18in6qp8x"]];
+
+/* ── lookups ─────────────────────────────────────────────── */
+const PLAN_MAP = {"467701":"Madrid (Spain)","527233":"Luxembourg (Luxembourg)","642255":"New York (United States)","648658":"Brisbane (Australia)","675437":"Hamburg (Germany)","707992":"Chicago (United States)","712109":"São Paulo (Brazil)","713718":"Zurich (Switzerland)"};
+const CITY_MAP = {"5":"Madrid","6":"New York","21":"Chicago","28":"São Paulo","57":"Hamburg","74":"Brisbane","83":"Zurich","405":"Luxembourg"};
+const COUNTRY_MAP = {"210":"Spain","236":"United States","32":"Brazil","216":"Switzerland","131":"Luxembourg","84":"Germany","14":"Australia"};
+const clean = v => String(v??"").trim().replace(/\.0$/,"");
+function resolveCity(r){const p=PLAN_MAP[clean(r[C.idp])];if(p)return p.split(" (")[0];return CITY_MAP[clean(r[C.c])]||null;}
+function resolveCountry(r){const p=PLAN_MAP[clean(r[C.idp])];if(p)return p.match(/\(([^)]+)\)/)[1];return COUNTRY_MAP[clean(r[C.ct])]||null;}
+/* QR code / onsite links carry no ticket id (idt = xxxxx); email links do */
+function resolveSource(r){const t=clean(r[C.idt]);return (!t||t==="xxxxx"||/^onsite$/i.test(String(r[C.name]||"").trim()))?"Onsite QR":"Email";}
+
+/* ── CSV parser ──────────────────────────────────────────── */
+function parseCSV(text){
+  const rows=[];let row=[],cell="",inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],nx=text[i+1];
+    if(inQ){if(ch==='"'&&nx==='"'){cell+='"';i++;}else if(ch==='"')inQ=false;else cell+=ch;}
+    else{if(ch==='"')inQ=true;else if(ch===','){row.push(cell);cell="";}
+    else if(ch==='\n'||(ch==='\r'&&nx==='\n')){row.push(cell);cell="";if(row.some(c=>c.trim()))rows.push(row);row=[];if(ch==='\r')i++;}
+    else cell+=ch;}
+  }
+  if(cell||row.length){row.push(cell);if(row.some(c=>c.trim()))rows.push(row);}
+  return rows;
+}
+
+/* ── gauges ──────────────────────────────────────────────── */
+const RSEG=[{from:1,to:3.8,color:"#E24B4A"},{from:3.8,to:4.2,color:"#EF9F27"},{from:4.2,to:5,color:"#1D9E75"}];
+const CSEG=[{from:1,to:2,color:"#E24B4A"},{from:2,to:2.5,color:"#EF9F27"},{from:2.5,to:3.5,color:"#1D9E75"},{from:3.5,to:4,color:"#EF9F27"},{from:4,to:5,color:"#E24B4A"}];
+function v2a(v,mn,mx){return Math.PI-((v-mn)/(mx-mn))*Math.PI;}
+function arcD(cx,cy,r,a1,a2){
+  const x1=cx+r*Math.cos(a1),y1=cy-r*Math.sin(a1),x2=cx+r*Math.cos(a2),y2=cy-r*Math.sin(a2);
+  return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${Math.abs(a2-a1)>Math.PI?1:0} ${a1>a2?1:0} ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+function gauge(avgVal,n,segs,mn,mx,endLbls){
+  const cx=120,cy=118,r=80,sw=22;
+  const paths=segs.map(s=>`<path d="${arcD(cx,cy,r,v2a(s.from,mn,mx),v2a(s.to,mn,mx))}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-linecap="butt"/>`).join("");
+  const tvs=mx===10?[1,2,4,6,8,9,10]:[1,2,3,4,5];
+  const ticks=tvs.map(v=>{const a=v2a(v,mn,mx),tr=r+sw+12;return `<text x="${(cx+tr*Math.cos(a)).toFixed(1)}" y="${(cy-tr*Math.sin(a)).toFixed(1)}" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="#bbb">${v}</text>`;}).join("");
+  let ndl="";
+  if(avgVal!==null){const a=v2a(avgVal,mn,mx),nr=r-sw*.5-3,nx=cx+nr*Math.cos(a),ny=cy-nr*Math.sin(a),deg=(Math.PI-a)*(180/Math.PI)+90;ndl=`<polygon points="0,-10 6,0 -6,0" fill="#555" transform="translate(${nx.toFixed(1)},${ny.toFixed(1)}) rotate(${deg.toFixed(1)})"/>`;}
+  const el=endLbls?`<text x="${(cx+(r+sw+30)*Math.cos(Math.PI)).toFixed(1)}" y="${(cy-(r+sw+30)*Math.sin(Math.PI)+12).toFixed(1)}" text-anchor="middle" font-size="9" fill="#bbb">${endLbls[0]}</text><text x="${(cx+(r+sw+30)*Math.cos(0)).toFixed(1)}" y="${(cy-(r+sw+30)*Math.sin(0)+12).toFixed(1)}" text-anchor="middle" font-size="9" fill="#bbb">${endLbls[1]}</text>`:"";
+  const as=avgVal!==null?avgVal.toFixed(2):"–";
+  return `<svg viewBox="0 0 240 158" width="240" height="158">${paths}${ticks}${ndl}${el}<text x="${cx}" y="${cy-4}" text-anchor="middle" font-size="28" font-weight="600" fill="#1a1916">${as}</text><text x="${cx}" y="${cy+18}" text-anchor="middle" font-size="11" fill="#bbb">${avgVal!==null?`n = ${n}`:"no data"}</text></svg>`;
+}
+
+/* ── charts ──────────────────────────────────────────────── */
+const CR=[];
+function destroyCharts(){CR.forEach(c=>c.destroy());CR.length=0;}
+function bar(id,labels,data,color,horiz){
+  const ctx=document.getElementById(id);if(!ctx)return;
+  CR.push(new Chart(ctx,{
+    type:"bar",
+    data:{labels,datasets:[{data,backgroundColor:color||"#185FA5",borderRadius:4,borderSkipped:false}]},
+    options:{indexAxis:horiz?"y":"x",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:!!horiz},ticks:{color:"#7a776e",font:{size:11},maxRotation:0},beginAtZero:!!horiz},
+              y:{grid:{display:!horiz},ticks:{color:"#7a776e",font:{size:11}},beginAtZero:!horiz}}}
+  }));
+}
+
+/* ── helpers ─────────────────────────────────────────────── */
+function tryNum(v){const n=parseFloat(String(v??"").replace(/[^0-9.\-]/g,""));return isNaN(n)?null:n;}
+function avg(a){const ns=a.filter(v=>v!==null);return ns.length?ns.reduce((a,b)=>a+b,0)/ns.length:null;}
+function freq(arr){const m={};arr.forEach(v=>{if(v&&v.trim())m[v.trim()]=(m[v.trim()]||0)+1;});return m;}
+function uniq(arr){return[...new Set(arr.filter(Boolean))].sort();}
+function sorted(m,n=10){return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);}
+
+
+/* ── option parsing (Typeform wraps choice labels in *…*) ──── */
+function opts(v){
+  const s=String(v??"").trim(); if(!s) return {found:[],other:null};
+  const found=[...s.matchAll(/\*([^*]+)\*/g)].map(m=>m[1].trim());
+  const rest=s.replace(/\*[^*]+\*/g,"").replace(/^[\s,]+|[\s,]+$/g,"").trim();
+  return {found, other: rest||null};
+}
+function catSingle(rows,i){return rows.map(r=>{const o=opts(r[i]);return o.found[0]||(o.other?"Other (written in)":null);}).filter(Boolean);}
+function wrapL(s,n=24){const w=String(s).split(" "),out=[];let cur="";w.forEach(x=>{if((cur+" "+x).trim().length>n&&cur){out.push(cur);cur=x;}else cur=(cur+" "+x).trim();});if(cur)out.push(cur);return out.length>1?out:s;}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+/* ── improvement themes (keyword match: EN, DE, PT, FR, ES) ── */
+const THEMES = [
+  {l:"Crowding / too many people", re:/crowd|too many|so many|viele leute|weniger leute|teilnehmer|menos gente|menos pessoas|lotação|superlot|capacity|kapazit|full|packed|zu viele|voll|überf|lotad|cheio|muita gente|muitas pessoas|trop de monde|beaucoup de monde|demasiad|mucha gente|aforo|100\+/i},
+  {l:"Volume / sound", re:/volume|loud|quiet|sound|acoustic|hear|laut|leise|lautst|mikro|micro|akust|\bsom\b|barulh|ouvir|\bson\b|bruit|sonido|ruido/i},
+  {l:"Seating / comfort", re:/seat|sit|cushion|chair|floor|mat\b|comfort|sitz|kissen|stuhl|boden|bequem|cadeira|almofad|chão|conforto|sentar|coussin|chaise|\bsol\b|asiento|cojin|suelo/i},
+  {l:"Price / value", re:/price|expensive|cheap|money|cost|value|preis|teuer|geld|kosten|caro|preço|valor|dinheiro|cher|prix|precio/i},
+  {l:"Duration", re:/short|long|duration|minutes|kurz|lang|dauer|minuten|curto|longo|duração|minutos|court|durée|corto|duración/i},
+  {l:"Interaction / engagement", re:/interact|engag|involv|participat|activit|interak|einbez|mitmach|beteilig|interaç|envolv|particip|ativ|interacti|activ|interacc/i},
+  {l:"Visuals / lights", re:/visual|light|bubble|colou?r|licht|seifenbl|farb|visuell|\bluz|luzes|bolha|cores|lumière|bulle|visuel|burbuja|colores/i},
+  {l:"Music / setlist", re:/music|song|setlist|repert|orchest|musician|instrument|musik|lied|orchester|música|músic|canç|musique|chanson|musicien|canción/i},
+  {l:"Age mix", re:/older (kids|children)|toddlers? (are|and|vs)|age (range|group|mix)|mixed ages|kleinkind|ältere kinder|niños mayores|crianças (maiores|grandes)|\bidade\b|enfants plus/i},
+  {l:"Other adults' behaviour / noise", re:/chit-?chat|talking|parents|adults|eltern|erwachsene|pais\b|adultos|silêncio|silencio|conversa|parents|bavard/i},
+  {l:"Photos / filming", re:/photo|film|record|video|fotograf|foto|filmag|gravad|vídeo|grabar/i},
+  {l:"Facilities / access", re:/stroller|pram|lift|elevator|stair|changing|toilet|bathroom|parking|kinderwagen|treppe|wickel|toilette|carrinho|escada|banheiro|fraldário|poussette|ascenseur|escalier|carrito|baño|ascensor/i},
+  {l:"Organisation / information", re:/organi|info|queue|wait|entry|staff|communic|warte|einlass|organis|fila|espera|entrada|informa|attente|accueil|cola/i},
+];
+function themeCounts(texts){const m={};texts.forEach(t=>THEMES.forEach(th=>{if(th.re.test(t))m[th.l]=(m[th.l]||0)+1;}));return m;}
+
+/* ── open text translation ───────────────────────────────── */
+async function translateComment(text) {
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const data = await res.json();
+    const lang = data[2];
+    if(lang === 'en') return null;
+    const translated = data[0].map(s=>s[0]).join('');
+    return translated;
+  } catch(e) { return null; }
+}
+
+async function translateColumn(btnEl, containerId) {
+  btnEl.textContent = 'Translating…';
+  btnEl.disabled = true;
+  const items = document.querySelectorAll(`#${containerId} .comi`);
+  for(const item of items) {
+    if(item.dataset.translated) continue;
+    const original = item.textContent.trim();
+    if(!original) continue;
+    const translation = await translateComment(original);
+    if(translation) {
+      item.innerHTML = `${translation}<div style="font-size:11px;color:var(--faint);margin-top:3px;font-style:italic">${original}</div>`;
+    }
+    item.dataset.translated = '1';
+  }
+  btnEl.textContent = 'Translated';
+}
+
+
+/* ── column lookup by header (robust to column moves) ─────── */
+let ROWS=[],HDRS=[],C={},SOURCE="";
+function findCol(re,fallback){const i=HDRS.findIndex(h=>re.test(String(h).replace(/\*/g,"").replace(/\s+/g," ")));return i>=0?i:fallback;}
+function buildColumns(){
+  C={
+    rec:findCol(/would you recommend/i,0), venue:findCol(/rate the venue/i,1), staff:findCol(/onsite staff/i,2),
+    move:findCol(/move around the venue/i,3), comfort:findCol(/comfort during/i,4), setlist:findCol(/rate the setlist/i,5),
+    candles:findCol(/candle setup/i,6), interact:findCol(/interaction in the experience/i,7), volume:findCol(/volume of the music/i,8),
+    people:findCol(/amount of people/i,9), duration:findCol(/duration of the experience/i,10), vfm:findCol(/value for money/i,11),
+    exp:findCol(/compare to your expectations/i,12), ret:findCol(/return to this experience/i,13), info:findCol(/information you wish/i,14),
+    audience:findCol(/type of audience/i,15), liked:findCol(/enjoy(ed)? the most/i,16), improve:findCol(/most improvement/i,17),
+    other:findCol(/anything else/i,18),
+    c:findCol(/^c$/,19), ct:findCol(/^ct$/,20), idp:findCol(/^idp$/,22), p:findCol(/^p$/,23), idt:findCol(/^idt$/,24), name:findCol(/^name$/,25),
+    sub:findCol(/^submitted at$/i,26), token:findCol(/^token$/i,27),
+  };
+}
+
+/* Centre-ideal questions: 3 = just right. Interaction scale (from Typeform): 1 = I expected less, 3 = perfect, 5 = I expected more. */
+const CENTRE_DEFS = [
+  {k:"duration", l:"Duration", el:["Too short","Too long"]},
+  {k:"volume",   l:"Music volume", el:["Too quiet","Too loud"]},
+  {k:"people",   l:"Amount of people", el:["Too few","Too many"]},
+  {k:"interact", l:"Interaction vs expectations", el:["Expected less","Expected more"], mid:"perfect", neutral:true},
+];
+const RATING_DEFS = [
+  {k:"venue",l:"Venue"},{k:"staff",l:"Onsite staff"},{k:"move",l:"Ease of moving around"},
+  {k:"comfort",l:"Comfort"},{k:"setlist",l:"Setlist"},{k:"candles",l:"Candle setup"},
+];
+
+/* ── dedupe: one row per token, keep the completed submission ── */
+function dedupeByToken(rows){
+  const seen={},noTok=[];
+  const partial=r=>{const s=String(r[C.sub]||"").trim();return !s||s.includes("0001");};
+  rows.forEach(r=>{
+    const t=String(r[C.token]||"").trim();
+    if(!t){noTok.push(r);return;}
+    if(!seen[t]||(partial(seen[t])&&!partial(r)))seen[t]=r;
+  });
+  return [...Object.values(seen),...noTok];
+}
+
+/* ── load ────────────────────────────────────────────────── */
+function useRows(rows,src){
+  HDRS=rows[0].map(String);buildColumns();
+  ROWS=dedupeByToken(rows.slice(1).map(r=>r.map(v=>v==null?"":String(v))));
+  SOURCE=src;
+  const b=document.getElementById("src-badge");b.textContent=src;b.style.display="inline-block";
+  populateFilters();renderDashboard();
+  if(ACTIVE_TAB==="comp")renderComparison();
+  if(ACTIVE_TAB==="trend")renderTrends();
+}
+async function loadData(){
+  const msg=document.getElementById("state-msg");
+  if(!SHEET_URL){useRows(SNAPSHOT,`Snapshot · ${SNAPSHOT_DATE}`);return;}
+  document.getElementById("refresh-btn").style.display="flex";
+  msg.style.display="flex";msg.innerHTML='<div class="spinner"></div><span>Loading data from Google Sheets…</span>';
+  try{
+    const res=await fetch(SHEET_URL);if(!res.ok)throw new Error("HTTP "+res.status);
+    const rows=parseCSV(await res.text());if(rows.length<2)throw new Error("Sheet appears to be empty.");
+    useRows(rows,"Live · Google Sheets");
+  }catch(e){
+    useRows(SNAPSHOT,`Snapshot · ${SNAPSHOT_DATE} (live load failed)`);
+  }
+}
+window.addEventListener("load",()=>loadData());
+
+/* ── filters ─────────────────────────────────────────────── */
+function fillSelect(selId,vals,fn){
+  const sel=document.getElementById(selId),cur=sel.value,keep=vals.includes(cur)?cur:"";
+  sel.innerHTML=`<option value="">All</option>`+vals.map(v=>`<option value="${v}"${v===keep?" selected":""}>${v}</option>`).join("");
+  sel.disabled=vals.length<=1;sel.onchange=fn;
+}
+function rerender(){renderDashboard();if(ACTIVE_TAB==="comp")renderComparison();if(ACTIVE_TAB==="trend")renderTrends();}
+function populateFilters(){
+  function refresh(first){
+    const country=document.getElementById("f-country").value,city=document.getElementById("f-city").value;
+    fillSelect("f-country",uniq(ROWS.map(resolveCountry)),()=>refresh());
+    const byCountry=country?ROWS.filter(r=>resolveCountry(r)===country):ROWS;
+    fillSelect("f-city",uniq(byCountry.map(resolveCity)),()=>refresh());
+    const byCity=city?byCountry.filter(r=>resolveCity(r)===city):byCountry;
+    fillSelect("f-idp",uniq(byCity.map(r=>clean(r[C.idp])).filter(v=>v!=="xxxxx")),rerender);
+    fillSelect("f-src",uniq(ROWS.map(resolveSource)),rerender);
+    if(!first)rerender();
+  }
+  refresh(true);
+}
+function geoFilter(r,withIdp){
+  const country=document.getElementById("f-country").value,city=document.getElementById("f-city").value,idp=document.getElementById("f-idp").value,src=document.getElementById("f-src").value;
+  if(country&&resolveCountry(r)!==country)return false;
+  if(city&&resolveCity(r)!==city)return false;
+  if(withIdp&&idp&&clean(r[C.idp])!==idp)return false;
+  if(src&&resolveSource(r)!==src)return false;
+  return true;
+}
+function filteredRows(){return ROWS.filter(r=>geoFilter(r,true));}
+
+/* ── render dashboard ────────────────────────────────────── */
+function commentList(title,items,id,translate=true){
+  return `<div class="comc">
+    <div class="comh" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span>${title} (${items.length})</span>
+      ${translate?`<button onclick="translateColumn(this,'${id}')" style="font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer">Translate</button>`:""}
+    </div>
+    <div class="coml" id="${id}">${items.map(c=>`<div class="comi">${c}</div>`).join("")||`<div class="comi" style="color:var(--faint)">No responses</div>`}</div>
+  </div>`;
+}
+function chartCard(id,title,n,note){
+  const hh=Math.max(100,n*34+40);
+  return `<div class="cc"><div class="ct">${title}</div><div style="position:relative;width:100%;height:${hh}px"><canvas id="${id}"></canvas></div>${note?`<div class="note">${note}</div>`:""}</div>`;
+}
+function centreSplit(n,el,mid="just right",neutral=false){
+  const lo=Math.round(n.filter(v=>v<=2).length/n.length*100),md=Math.round(n.filter(v=>v===3).length/n.length*100),hi=100-lo-md;
+  return `<div class="split"><span style="color:${lo>=25&&!neutral?"#A32D2D":"var(--muted)"}">${lo}% ${el[0].toLowerCase()}</span> · ${md}% ${mid} · <span style="color:${hi>=25&&!neutral?"#A32D2D":"var(--muted)"}">${hi}% ${el[1].toLowerCase()}</span></div>`;
+}
+
+function renderDashboard(){
+  try{
+  destroyCharts();
+  const rows=filteredRows();
+  document.getElementById("resp-count").textContent=`${rows.length} response${rows.length!==1?"s":""}`;
+  document.getElementById("resp-count").style.display="inline-block";
+  const srcSel=document.getElementById("f-src").value;
+  document.getElementById("dash-sub").textContent=`Post-experience survey · ${rows.length} responses${srcSel?" · "+srcSel:""}`;
+
+  const col=i=>rows.map(r=>r[i]??"");
+  const nums=i=>col(i).map(tryNum).filter(v=>v!==null);
+  const ga=i=>{const n=nums(i);return{a:avg(n),n:n.length};};
+  const texts=i=>col(i).map(v=>String(v).trim()).filter(Boolean).map(escapeHtml);
+
+  const rn=nums(C.rec),npsN=rn.length;
+  const pro=rn.filter(v=>v>=9).length,pas=rn.filter(v=>v>=7&&v<=8).length,det=rn.filter(v=>v<=6).length;
+  const npsScore=npsN?Math.round(((pro-det)/npsN)*100):null;
+  const recAvg=avg(rn);
+  const vfm=ga(C.vfm),ex=ga(C.exp),ret=ga(C.ret);
+  const unit=s=>`<span style="font-size:16px;font-weight:400;color:var(--faint)">${s}</span>`;
+
+  let h=`<div class="kpi-strip">`;
+  if(npsScore!==null)h+=`<div class="kpi"><div class="kpi-label">NPS</div><div class="kpi-value" style="color:${metricColor(npsScore,"nps")}">${npsScore>0?"+":""}${npsScore}</div><div class="kpi-sub">${npsN} responses</div></div>`;
+  h+=`<div class="kpi"><div class="kpi-label">Total responses</div><div class="kpi-value">${rows.length}</div><div class="kpi-sub">${rows.filter(r=>resolveSource(r)==="Onsite QR").length} onsite · ${rows.filter(r=>resolveSource(r)==="Email").length} email</div></div>`;
+  if(recAvg!==null)h+=`<div class="kpi"><div class="kpi-label">Recommend</div><div class="kpi-value" style="color:${metricColor(recAvg,"rec")}">${recAvg.toFixed(1)}${unit("/10")}</div><div class="kpi-sub">n = ${npsN}</div></div>`;
+  if(vfm.a!==null)h+=`<div class="kpi"><div class="kpi-label">Value for money</div><div class="kpi-value" style="color:${metricColor(vfm.a)}">${vfm.a.toFixed(1)}${unit("/5")}</div><div class="kpi-sub">n = ${vfm.n}</div></div>`;
+  if(ret.a!==null)h+=`<div class="kpi"><div class="kpi-label">Likely to return</div><div class="kpi-value" style="color:${metricColor(ret.a)}">${ret.a.toFixed(1)}${unit("/5")}</div><div class="kpi-sub">n = ${ret.n}</div></div>`;
+  h+=`</div>`;
+
+  if(npsScore!==null&&npsN>0){
+    const pp=Math.round((pro/npsN)*100),pap=Math.round((pas/npsN)*100),dp=100-pp-pap;
+    h+=`<div class="nps-card"><div class="ct">NPS breakdown</div>
+      <div class="nps-bar">
+        ${det?`<div class="nps-seg" style="width:${dp}%;background:#A32D2D">${det}</div>`:""}
+        ${pas?`<div class="nps-seg" style="width:${pap}%;background:#BA7517">${pas}</div>`:""}
+        ${pro?`<div class="nps-seg" style="width:${pp}%;background:#1D9E75">${pro}</div>`:""}
+      </div>
+      <div class="nps-legs"><span style="color:#A32D2D">Detractors (0–6) · ${dp}%</span><span style="color:#BA7517">Passives (7–8) · ${pap}%</span><span style="color:#1D9E75">Promoters (9–10) · ${pp}%</span></div>
+    </div>`;
+  }
+
+  h+=`<div class="sh">Overview</div><div class="gg">`;
+  if(ex.a!==null)h+=`<div class="gc"><div class="gl">Experience vs expectations</div>${gauge(ex.a,ex.n,RSEG,1,5,null)}</div>`;
+  if(ret.a!==null)h+=`<div class="gc"><div class="gl">Likelihood to return</div>${gauge(ret.a,ret.n,RSEG,1,5,null)}</div>`;
+  if(vfm.a!==null)h+=`<div class="gc"><div class="gl">Value for money</div>${gauge(vfm.a,vfm.n,RSEG,1,5,null)}</div>`;
+  h+=`</div>`;
+
+  h+=`<div class="sh">Experience feel (3 = just right)</div><div class="gg">`;
+  CENTRE_DEFS.forEach(({k,l,el,mid,neutral})=>{const n=nums(C[k]);if(n.length)h+=`<div class="gc"><div class="gl">${l}</div>${gauge(avg(n),n.length,CSEG,1,5,el)}${centreSplit(n,el,mid,neutral)}</div>`;});
+  h+=`</div>`;
+
+  h+=`<div class="sh">Ratings</div><div class="gg">`;
+  RATING_DEFS.forEach(({k,l})=>{const n=nums(C[k]);if(n.length)h+=`<div class="gc"><div class="gl">${l}</div>${gauge(avg(n),n.length,RSEG,1,5,null)}</div>`;});
+  h+=`</div>`;
+
+  const aud=sorted(freq(catSingle(rows,C.audience)),8);
+  const audOther=rows.map(r=>opts(r[C.audience]).other).filter(Boolean).map(escapeHtml);
+  h+=`<div class="sh">Future audience</div><div class="og og-2">`;
+  h+=chartCard("aud","Preferred audience for future sessions",aud.length);
+  h+=commentList("Written-in audience answers",audOther,"ol-aud");
+  h+=`</div>`;
+
+  const improveTexts=col(C.improve).map(v=>String(v).trim()).filter(Boolean);
+  const themes=sorted(themeCounts(improveTexts),20);
+  h+=`<div class="sh">Open responses</div>`;
+  h+=`<div class="og og-2">${commentList("What they enjoyed most",texts(C.liked),"ol-liked")}${commentList("What needs the most improvement",improveTexts.map(escapeHtml),"ol-improve")}</div>`;
+  h+=`<div class="og og-2">${chartCard("themes","Improvement themes",themes.length,`Keyword match across English, German, Portuguese, French and Spanish answers to “what needs the most improvement” (${improveTexts.length} answers). One answer can hit several themes, so treat as a rough guide.`)}`;
+  h+=commentList("Information they wish they'd had beforehand",texts(C.info),"ol-info")+`</div>`;
+  h+=`<div class="og">${commentList("Anything else they'd like to share",texts(C.other),"ol-other")}</div>`;
+
+  h+=`<div class="last-updated">${SOURCE} · rendered ${new Date().toLocaleString()}</div>`;
+
+  const dash=document.getElementById("dashboard");
+  dash.innerHTML=h;
+  document.getElementById("state-msg").style.display="none";
+  dash.style.display=ACTIVE_TAB==="dash"?"block":"none";
+
+  bar("aud",aud.map(([k])=>wrapL(k)),aud.map(([,v])=>v),"#185FA5",true);
+  bar("themes",themes.map(([k])=>wrapL(k)),themes.map(([,v])=>v),"#E24B4A",true);
+  }catch(err){
+    const m=document.getElementById("state-msg");
+    m.innerHTML=`<div style="color:#A32D2D;font-weight:500">Render error: ${err.message}</div><pre style="font-size:11px;color:#7a776e;max-width:700px;white-space:pre-wrap;margin-top:8px">${err.stack}</pre>`;
+    m.style.display="flex";m.style.flexDirection="column";m.style.gap="8px";
+    document.getElementById("dashboard").style.display="none";
+  }
+}
+
+/* ── tabs ────────────────────────────────────────────────── */
+let ACTIVE_TAB="dash";
+function switchTab(tab){
+  ACTIVE_TAB=tab;
+  ["dash","comp","trend"].forEach(t=>{
+    document.getElementById("tab-"+t).style.background=tab===t?"var(--text)":"var(--surface)";
+    document.getElementById("tab-"+t).style.color=tab===t?"var(--surface)":"var(--muted)";
+  });
+  document.getElementById("dashboard").style.display=tab==="dash"?"block":"none";
+  document.getElementById("comparison").style.display=tab==="comp"?"block":"none";
+  document.getElementById("trends").style.display=tab==="trend"?"block":"none";
+  if(tab==="comp"&&ROWS.length)renderComparison();
+  if(tab==="trend"&&ROWS.length)renderTrends();
+}
+
+function metricColor(val, type) {
+  if(val===null) return '#b8b5ad';
+  if(type==='nps')    return val>=50?'#1D9E75':val>=0?'#EF9F27':'#E24B4A';
+  if(type==='rec')    return val>=9?'#1D9E75':val>=7?'#EF9F27':'#E24B4A';
+  if(type==='centre') {
+    // 3 is perfect, green 2.5-3.5, amber 2-2.5 and 3.5-4, red outside
+    const d = Math.abs(val - 3);
+    return d<=0.5?'#1D9E75':d<=1?'#EF9F27':'#E24B4A';
+  }
+  // standard 1-5 higher is better
+  return val>=4.2?'#1D9E75':val>=3.8?'#EF9F27':'#E24B4A';
+}
+
+
+  function relColor(val, allVals, isCentre, isNps, isRec) {
+    if(val===null) return {bg:'transparent',fg:'var(--faint)'};
+    const valid=allVals.filter(v=>v!==null);
+    if(valid.length<2) return {bg:'var(--bg)',fg:'var(--text)'};
+
+    // Absolute thresholds
+    function isGood(v)  {
+      if(isCentre) return Math.abs(v-3)<=0.5;
+      if(isNps)    return v>=50;
+      if(isRec)    return v>=8;   // 8-10 = green
+      return v>=4.2;
+    }
+    function isOk(v) {
+      if(isCentre) return Math.abs(v-3)<=1;
+      if(isNps)    return v>=0;
+      if(isRec)    return v>=6;   // 6-7 = amber
+      return v>=3.8;
+    }
+
+    const anyGood  = valid.some(isGood);
+    const anyBad   = valid.some(v=>!isOk(v));
+
+    // Relative score within group
+    const score = v => isCentre ? -Math.abs(v-3) : v;
+    const scores = valid.map(score);
+    const mn=Math.min(...scores), mx=Math.max(...scores);
+    const t = mx===mn ? 0.5 : (score(val)-mn)/(mx-mn); // 0=worst, 1=best
+
+    let r,g,b;
+    if(!anyGood) {
+      // All bad -- red spectrum only (dark red to light red)
+      const u = t; // 0=darkest red, 1=lightest red
+      r=Math.round(180+u*30); g=Math.round(60+u*80); b=Math.round(60+u*80);
+    } else if(!anyBad) {
+      // All good -- green spectrum only (light green to dark green)
+      const u = t;
+      r=Math.round(130-u*100); g=Math.round(150+u*50); b=Math.round(100+u*17);
+    } else {
+      // Mixed -- full red/amber/green but capped by absolute threshold
+      if(isGood(val)) {
+        // Green zone: lightest green (just above threshold) to darkest green (best)
+        const greenVals = valid.filter(isGood);
+        const gScores = greenVals.map(score);
+        const gMn=Math.min(...gScores), gMx=Math.max(...gScores);
+        const gt = gMx===gMn ? 1 : (score(val)-gMn)/(gMx-gMn);
+        r=Math.round(100-gt*70); g=Math.round(158+gt*42); b=Math.round(100+gt*17);
+      } else if(isOk(val)) {
+        // Amber zone
+        r=239; g=159; b=39;
+      } else {
+        // Red zone: light red (just below ok) to dark red (worst)
+        const badVals = valid.filter(v=>!isOk(v));
+        const bScores = badVals.map(score);
+        const bMn=Math.min(...bScores), bMx=Math.max(...bScores);
+        const bt = bMx===bMn ? 0 : (score(val)-bMn)/(bMx-bMn);
+        r=Math.round(220-bt*40); g=Math.round(80+bt*40); b=Math.round(74+bt*40);
+      }
+    }
+    const brightness = 0.299*r + 0.587*g + 0.114*b;
+    const fg = brightness < 140 ? '#fff' : '#333';
+    return {bg:`rgb(${r},${g},${b})`,fg};
+  }
+
+  function fmtVal(val, isNps) {
+    if(val===null) return '–';
+    if(isNps) return (val>0?'+':'')+val;
+    return val.toFixed(1);
+  }
+
+
+/* ── shared metric calc ──────────────────────────────────── */
+const metricDefs=[
+  {key:"nps",label:"NPS",isNps:true},{key:"rec",label:"Rec /10",isRec:true},
+  {key:"vfm",label:"VFM /5"},{key:"exp",label:"Expectations"},{key:"ret",label:"Return"},
+  {key:"venue",label:"Venue"},{key:"staff",label:"Staff"},{key:"move",label:"Moving around"},{key:"comfort",label:"Comfort"},
+  {key:"setlist",label:"Setlist"},{key:"candles",label:"Candles"},
+  {key:"duration",label:"Duration",centre:true},{key:"volume",label:"Volume",centre:true},{key:"people",label:"Crowd size",centre:true},{key:"interact",label:"Interaction vs exp.",centre:true},
+];
+function calcMetrics(rows){
+  const n=i=>rows.map(r=>tryNum(r[i])).filter(v=>v!==null);
+  const rn=n(C.rec),pro=rn.filter(v=>v>=9).length,det=rn.filter(v=>v<=6).length;
+  const m={nps:rn.length?Math.round(((pro-det)/rn.length)*100):null,rec:avg(rn),count:rows.length,npsN:rn.length};
+  metricDefs.filter(d=>!d.isNps&&!d.isRec).forEach(d=>{const v=n(C[d.key]);m[d.key]=avg(v);m[d.key+"N"]=v.length;});
+  return m;
+}
+
+/* ── compare cities ──────────────────────────────────────── */
+function renderComparison(){
+  const MIN_N=10;
+  const planRows={};
+  ROWS.forEach(r=>{if(!geoFilter(r,false))return;const idp=clean(r[C.idp]);if(!idp||idp==="xxxxx")return;(planRows[idp]=planRows[idp]||[]).push(r);});
+  const allPlans=Object.entries(planRows).map(([idp,rows])=>({idp,city:PLAN_MAP[idp]||(rows[0][C.p]||idp),m:calcMetrics(rows),lowN:rows.length<MIN_N}));
+  if(!allPlans.length){document.getElementById("comparison").innerHTML='<p style="padding:40px;color:var(--muted);text-align:center">No data.</p>';return;}
+  window._compSort=window._compSort||{key:"nps",dir:-1};
+  window._compActive=window._compActive||new Set(metricDefs.map(m=>m.key));
+  const score=(met,v)=>met&&met.centre?-Math.abs(v-3):v;
+  function sortPlans(){
+    const {key,dir}=window._compSort,met=metricDefs.find(m=>m.key===key);
+    allPlans.sort((a,b)=>{
+      if(key==="city")return a.city.localeCompare(b.city)*dir;
+      const av=key==="count"?a.m.count:a.m[key],bv=key==="count"?b.m.count:b.m[key];
+      if(av===null&&bv===null)return 0;if(av===null)return 1;if(bv===null)return -1;
+      return ((score(met,av)-score(met,bv))*dir)||((b.m.rec??0)-(a.m.rec??0));
+    });
+  }
+  function vsOthers(plan,pool){
+    return metricDefs.filter(m=>!m.isNps&&!m.isRec).map(m=>{
+      const val=plan.m[m.key];if(val===null)return null;
+      const ov=pool.filter(p=>p.idp!==plan.idp).map(p=>p.m[m.key]).filter(v=>v!==null);if(!ov.length)return null;
+      const oa=ov.reduce((a,b)=>a+b,0)/ov.length;
+      return {label:m.label,diff:m.centre?(Math.abs(oa-3)-Math.abs(val-3)):(val-oa)};
+    }).filter(Boolean);
+  }
+  const fmtCity=p=>p.city.split(" (")[0];
+  function insightBlock(){
+    const full=[...allPlans].filter(p=>!p.lowN).sort((a,b)=>((b.m.nps??-999)-(a.m.nps??-999))||((b.m.rec??0)-(a.m.rec??0)));
+    if(full.length<2)return "";
+    const lines=[],top=full[0],bottom=full[full.length-1];
+    const strengths=vsOthers(top,full).filter(s=>s.diff>0.2).sort((a,b)=>b.diff-a.diff).slice(0,3).map(s=>s.label);
+    lines.push(`<strong>${fmtCity(top)}</strong> leads with an NPS of ${top.m.nps>0?"+":""}${top.m.nps} (n = ${top.m.count})${strengths.length?". It scores above the other cities on "+strengths.join(", "):""}.`);
+    const weak=vsOthers(bottom,full).filter(s=>s.diff<-0.2).sort((a,b)=>a.diff-b.diff).slice(0,3).map(s=>s.label);
+    lines.push(`<strong>${fmtCity(bottom)}</strong> has the lowest NPS at ${bottom.m.nps>0?"+":""}${bottom.m.nps} (n = ${bottom.m.count})${weak.length?", with the biggest gaps in "+weak.join(", "):""}.`);
+    const mean=k=>{const v=full.map(p=>p.m[k]).filter(x=>x!==null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+    const sysWeak=metricDefs.filter(m=>{const mv=mean(m.key);if(mv===null)return false;if(m.centre)return Math.abs(mv-3)>0.6;if(m.isNps)return mv<0;if(m.isRec)return mv<7;return mv<3.8;}).map(m=>m.label);
+    if(sysWeak.length)lines.push(`Across the larger cities, <strong>${sysWeak.join("</strong>, <strong>")}</strong> ${sysWeak.length===1?"scores":"score"} below target. This points to a product-level issue rather than a local one.`);
+    const sysStrong=metricDefs.filter(m=>{const mv=mean(m.key);if(mv===null||m.centre)return false;if(m.isNps)return mv>=50;if(m.isRec)return mv>=8;return mv>=4.2;}).map(m=>m.label);
+    if(sysStrong.length)lines.push(`<strong>${sysStrong.join("</strong>, <strong>")}</strong> ${sysStrong.length===1?"is":"are"} consistently strong across cities.`);
+    const lowNames=allPlans.filter(p=>p.lowN).map(fmtCity);
+    if(lowNames.length)lines.push(`${lowNames.join(", ")} ${lowNames.length===1?"has":"have"} fewer than ${MIN_N} responses so ${lowNames.length===1?"is":"are"} left out of these highlights.`);
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:12px">Highlights</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">${lines.map(l=>`<li style="font-size:13px;line-height:1.6;color:var(--text);padding-left:16px;position:relative"><span style="position:absolute;left:0;color:var(--faint)">·</span>${l}</li>`).join("")}</ul>
+    </div>`;
+  }
+  function fmtVal(v,isNps){if(v===null)return "–";if(isNps)return (v>0?"+":"")+v;return v.toFixed(1);}
+  function drawTable(){
+    const act=metricDefs.filter(m=>window._compActive.has(m.key)),sk=window._compSort.key,sd=window._compSort.dir;
+    const arrow=k=>sk===k?(sd===-1?"↓":"↑"):"⇅";
+    let t=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;align-items:center"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:4px">Show:</span>`;
+    metricDefs.forEach(m=>{const on=window._compActive.has(m.key);t+=`<button onclick="window._compToggle('${m.key}')" style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;border:1px solid ${on?"var(--text)":"var(--border)"};background:${on?"var(--text)":"var(--surface)"};color:${on?"var(--surface)":"var(--muted)"};cursor:pointer">${m.label}</button>`;});
+    t+=`</div><div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--border)">
+      <th class="sort-th" style="text-align:left;padding:10px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap" onclick="window._compSetSort('city')">City <span style="color:var(--faint);font-size:10px">${arrow("city")}</span></th>
+      <th class="sort-th" style="text-align:center;padding:10px 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap" onclick="window._compSetSort('count')">n <span style="color:var(--faint);font-size:10px">${arrow("count")}</span></th>`;
+    act.forEach(m=>{const a=sk===m.key;t+=`<th class="sort-th" style="text-align:center;padding:10px 8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:${a?"var(--text)":"var(--muted)"};white-space:nowrap" onclick="window._compSetSort('${m.key}')">${m.label} <span style="font-size:10px;color:${a?"var(--text)":"var(--faint)"}">${arrow(m.key)}</span></th>`;});
+    t+=`</tr></thead><tbody>`;
+    allPlans.forEach(p=>{
+      const country=(p.city.match(/\(([^)]+)\)/)||[])[1]||"";
+      t+=`<tr style="border-bottom:1px solid var(--border);opacity:${p.lowN?"0.4":"1"}"><td style="padding:10px 14px;font-weight:500;white-space:nowrap">${fmtCity(p)}${p.lowN?' <span style="font-size:10px;color:var(--faint);font-weight:400">low n</span>':""}<br><span style="font-size:11px;color:var(--faint);font-weight:400">${country} · ${p.idp}</span></td><td style="padding:10px 8px;text-align:center;color:var(--muted);font-size:12px">${p.m.count}</td>`;
+      act.forEach(m=>{const v=p.m[m.key];const {bg,fg}=relColor(v,allPlans.map(q=>q.m[m.key]),!!m.centre,!!m.isNps,!!m.isRec);t+=`<td style="padding:10px 8px;text-align:center;font-weight:600;background:${bg};color:${fg};${sk===m.key?"outline:2px solid rgba(0,0,0,0.15);outline-offset:-2px":""}">${fmtVal(v,m.isNps)}</td>`;});
+      t+=`</tr>`;
+    });
+    t+=`</tbody></table></div><div style="font-size:11px;color:var(--muted);text-align:right;margin-top:10px">Click any column header to sort · greyed rows = fewer than ${MIN_N} responses · Duration, Volume, Crowd size: 3 = just right · Interaction: 3 = as expected (above 3 = more than expected)</div>`;
+    document.getElementById("comp-table-area").innerHTML=t;
+  }
+  window._compSetSort=k=>{if(window._compSort.key===k)window._compSort.dir*=-1;else window._compSort={key:k,dir:-1};sortPlans();drawTable();};
+  window._compToggle=k=>{const s=window._compActive;if(s.has(k)){if(s.size>1)s.delete(k);}else s.add(k);drawTable();};
+  sortPlans();
+  document.getElementById("comparison").innerHTML=insightBlock()+'<div id="comp-table-area"></div>';
+  drawTable();
+}
+
+/* ── trends (by submission week) ─────────────────────────── */
+const MIN_PT=3;
+let trendCharts=[],activeTrendMetric="nps",activeTrendGroup="all";
+function weekStart(s){const d=new Date(String(s).trim().replace(" ","T").slice(0,10)+"T00:00:00Z");if(isNaN(d)||d.getUTCFullYear()<2000)return null;const day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);return d.toISOString().slice(0,10);}
+function renderTrends(){
+  trendCharts.forEach(c=>c.destroy());trendCharts=[];
+  const met=metricDefs.find(m=>m.key===activeTrendMetric);
+  const rows=filteredRows();
+  const groupKey={all:()=>"All responses",country:resolveCountry,source:resolveSource}[activeTrendGroup];
+  const series={};
+  rows.forEach(r=>{const w=weekStart(r[C.sub]);const k=groupKey(r);if(!w||!k)return;((series[k]=series[k]||{})[w]=series[k][w]||[]).push(r);});
+  const keys=Object.keys(series).sort();
+  const el=document.getElementById("trends");
+  if(!keys.length){el.innerHTML='<p style="padding:40px;color:var(--muted);text-align:center">No dated responses for the current selection.</p>';return;}
+  const allWeeks=[...new Set(keys.flatMap(k=>Object.keys(series[k])))].sort();
+  const COLORS=["#185FA5","#534AB7","#1D9E75","#EF9F27","#E24B4A","#7F77DD","#5DCAA5","#BA7517"];
+  const datasets=keys.map((k,i)=>{
+    const pts=allWeeks.map(w=>{const rs=series[k][w];if(!rs||rs.length<MIN_PT)return null;const m=calcMetrics(rs);const v=m[met.key];return v===null?null:(met.isNps?v:+v.toFixed(2));});
+    return {label:k,data:pts,nCounts:allWeeks.map(w=>series[k][w]?.length||0),borderColor:COLORS[i%COLORS.length],backgroundColor:COLORS[i%COLORS.length]+"33",pointRadius:5,pointHoverRadius:7,tension:.3,fill:false,spanGaps:true};
+  });
+  const pill=(on,js,label)=>`<button onclick="${js}" style="font-size:11px;font-weight:500;padding:4px 10px;border-radius:20px;border:1px solid ${on?"var(--text)":"var(--border)"};background:${on?"var(--text)":"var(--surface)"};color:${on?"var(--surface)":"var(--muted)"};cursor:pointer">${label}</button>`;
+  const lab=s=>`<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-right:4px">${s}</span>`;
+  let ui=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center">${lab("Metric:")}${metricDefs.map(m=>pill(m.key===activeTrendMetric,`activeTrendMetric='${m.key}';renderTrends();`,m.label)).join("")}</div>`;
+  ui+=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px;align-items:center">${lab("Group by:")}${[["all","All"],["country","Country"],["source","Source"]].map(([k,l])=>pill(k===activeTrendGroup,`activeTrendGroup='${k}';renderTrends();`,l)).join("")}</div>`;
+  ui+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px"><div style="position:relative;height:360px"><canvas id="trend-main"></canvas></div></div>
+  <div style="font-size:11px;color:var(--faint);text-align:right;margin-top:10px">x-axis = week the survey was submitted (Mon start) · hover a point to see n · weeks with fewer than ${MIN_PT} responses are not plotted · dashed line = target</div>`;
+  el.innerHTML=ui;
+  const threshold=met.centre?3:met.isNps?0:met.isRec?7:4.2;
+  const thresholdLabel=met.centre?"3 = just right":met.isNps?"NPS 0":met.isRec?"Target 7":"Target 4.2";
+  datasets.push({label:thresholdLabel,data:allWeeks.map(()=>threshold),borderColor:"#b8b5ad",borderWidth:1.5,borderDash:[5,5],pointRadius:0,fill:false,tension:0,order:99});
+  trendCharts.push(new Chart(document.getElementById("trend-main"),{type:"line",data:{labels:allWeeks,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:"#7a776e",font:{size:11},boxWidth:12}},tooltip:{callbacks:{afterLabel:ctx=>{const n=ctx.dataset.nCounts?.[ctx.dataIndex];return n?`n = ${n}`:"";}}}},
+      scales:{x:{grid:{display:false},ticks:{color:"#7a776e",font:{size:11}}},y:{min:met.isNps?-100:met.isRec?0:1,max:met.isNps?100:met.isRec?10:5,grid:{color:"rgba(0,0,0,.05)"},ticks:{color:"#7a776e",font:{size:11}}}}}}));
+}
+</script>
+</body>
+</html>
